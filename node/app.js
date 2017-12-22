@@ -252,7 +252,14 @@ function receivedMessage(event) {
 
   if (messageText) {
     var messageTextFormatted = messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase();
-    var commandArray = messageTextFormatted.split(" ");
+    var commandArray = messageText.split(" ", 1);
+    var song = "";
+    var i = commandArray[0].length;
+    while (messageText[i] !== undefined) {
+      song+= messageText[i];
+      i++;
+    }
+    commandArray[1] = song;
     console.log(commandArray);
     switch (commandArray[0]) {
       case 'spotify':
@@ -503,7 +510,7 @@ function sendHiMessage(recipientId) {
           id: recipientId
         },
         message: {
-          text: "Hello " + userInfo.first_name + "."
+          text: "Hello " + userInfo.first_name + " " + userInfo.last_name + "."
         }
       }
       callSendAPI(messageData);
@@ -989,6 +996,7 @@ function displayTweets (screen_name, senderID) {
       } else {
         for (var i = 0; i < tweets.length; i++) {
           console.log(tweets[i].created_at + ' ' + tweets[i].text);
+          message += tweets[i].created_at + '\n' + tweets[i].text + '\n\n';
         }
       }
       var messageData = {
