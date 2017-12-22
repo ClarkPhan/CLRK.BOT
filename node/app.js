@@ -253,21 +253,25 @@ function receivedMessage(event) {
   if (messageText) {
     var messageTextFormatted = messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase();
     var commandArray = messageText.split(" ", 1);
-    var song = "";
+    var song_or_movie = "";
     var i = commandArray[0].length;
     while (messageText[i] !== undefined) {
-      song+= messageText[i];
+      song_or_movie += messageText[i];
       i++;
     }
-    commandArray[1] = song;
+    commandArray[1] = song_or_movie;
     console.log(commandArray);
-    switch (commandArray[0]) {
+    switch (commandArray[0].replace(/[^\w\s]/gi, '').trim().toLowerCase()) {
       case 'spotify':
         searchSong (commandArray[1], senderID);
         sendReadReceipt(senderID);
         return;
       case 'tweets':
         displayTweets(commandArray[1], senderID);
+        sendReadReceipt(senderID);
+        return;
+      case 'movie':
+        searchMovie(commandArray[1], senderID);
         sendReadReceipt(senderID);
         return;
     }
@@ -1005,6 +1009,51 @@ function displayTweets (screen_name, senderID) {
         },
         message: {
           text: message
+        }
+      }
+      callSendAPI(messageData);
+    }
+  })
+}
+
+function searchMovie (movie, senderID) {
+  var request = require('request')
+  var queryUrl = 'http://www.omdbapi.com/?t=' + movie + 
+  '&y=&plot=short&apikey=' + process.env.movie_api_key;
+
+  request(queryUrl, function (error, response, body) {
+    if (!error && response.statusCode === 200) {
+      var movieInfo = JSON.parse(body)
+      var IMDB_Rating = "";
+      var Rotten_Tomatoes_Rating = "";
+
+      console.log(movieInfo);
+      console.log('Title: ' + movieInfo.Title)
+      console.log('Release Year: ' + movieInfo.Year)
+      if (movieInfo.Ratings[0] !== undefined) {
+        console.log('IMDB Rating: ' + movieInfo.Ratings[0].Value)
+        IMDB_Rating  = 'IMDB Rating: ' + movieInfo.Ratings[0].Value + '\n';
+      }
+      if (movieInfo.Ratings[1] !== undefined) {
+        console.log('Rotten Tomatoes Rating: ' + movieInfo.Ratings[1].Value);
+        Rotten_Tomatoes_Rating = 'Rotten Tomatoes Rating: ' 
+        + movieInfo.Ratings[1].Value + '\n';
+      }
+      console.log('Country: ' + movieInfo.Country)
+      console.log('Plot: ' + movieInfo.Plot)
+      console.log('Actors: ' + movieInfo.Actors)
+      var messageData = {
+        recipient: {
+          id: senderID
+        },
+        message: {
+          text: 'Title: ' + movieInfo.Title + '\n' +
+            'Release Year: ' + movieInfo.Year + '\n' +
+            IMDB_Rating +
+            Rotten_Tomatoes_Rating +
+            'Country: ' + movieInfo.Country + '\n' +
+            'Plot: ' + movieInfo.Plot + '\n' +
+            'Actors: ' + movieInfo.Actors + '\n'
         }
       }
       callSendAPI(messageData);
