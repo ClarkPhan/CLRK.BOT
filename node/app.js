@@ -17,7 +17,9 @@ const
   express = require('express'),
   https = require('https'),
   request = require('request');
-
+  
+// Read and set environment variables
+var dotenv = require("dotenv").config();
 var app = express();
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
@@ -249,11 +251,23 @@ function receivedMessage(event) {
   }
 
   if (messageText) {
-
+    var messageTextFormatted = messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase();
+    var commandArray = messageTextFormatted.split(" ");
+    console.log(commandArray);
+    switch (commandArray[0]) {
+      case 'spotify':
+        searchSong (commandArray[1], senderID);
+        sendReadReceipt(senderID);
+        return;
+      case 'tweets':
+        displayTweets(commandArray[1], senderID);
+        sendReadReceipt(senderID);
+        return;
+    }
     // If we receive a text message, check to see if it matches any special
     // keywords and send back the corresponding example. Otherwise, just echo
     // the text we received.
-    switch (messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase()) {
+    switch (messageTextFormatted) {
       case 'hello':
       case 'hi':
         sendHiMessage(senderID);
@@ -310,11 +324,49 @@ function receivedMessage(event) {
       case 'account linking':
         requiresServerURL(sendAccountLinking, [senderID]);
         break;
-      case 'link my account':
-        sendAccountLinking(senderID);
+      case 'call me by my other name':
+        var messageData = {
+          recipient: {
+            id: senderID
+          },
+          message: {
+            text: "Hello Master."
+          }
+        }
+        callSendAPI(messageData);
+        break;
+        case 'wtf':
+        var messageData = {
+          recipient: {
+            id: senderID
+          },
+          message: {
+            text: 'Hi 😊 I\'m 13 💯 and I just started watching 👀 Rick👴 and' 
+            + 'Morty 👶 and I can tell 👄 you for a fact 👩‍🏫 it\'s my favorite 😜' 
+            + 'show!!. Lik the one ☝️ time ⏰ Ricky 👴 said 👄 said 👄there\'s' 
+            + 'probably like no 😠 good 👿 !!!! i 👁️ was agreeing😀 so much I\'am 👁'
+            //+️ 'smarter 👩‍🎓 then you\'re average fidget spinner 🌀 teen at middle school'
+            + '🏫🎒 to even though I have one ☝️. I may be young👶 but I\'m smarter'
+            + '👩📊‍🎓 then every💯 theist ⛪ on earth 🌍 basically the show📺' 
+            + 'is also really ‼️deep 👓👓 when they said👄 like no🙅‍♂️ one' 
+            + '☝️was born 👶 for 4️⃣a reason I 👁️ was so blown 🌬️away🍃 as' 
+            + 'they must have ‼️ big balls ‼️ to say 👄 that on tv 📺 so I'
+            + '👁️ told 👄 my friends 👫👬👭 on minecraft 🎮⛏️ and they a'
+            + 'gree 👍💯👍💯 too2️⃣. LOL 😂 once ☝️ when my mom 👩 took me'
+            + 'to 2️⃣ McDonald\'s 🍟🍟🍟 I 👁️ asked ❓ for the Mulan 🇨🇳 dipping sauce'
+            + '💯 and the dumb 😠 bitch 😠 didn\'t even get the reference XD 😂'
+            + 'One ☝️ time ⏰ in class 👩‍🏫️ i 👁️ shouted 😲 \"I\'m PICKLE 🥒🥒🥒' 
+            + 'RIIIICK! 👴🥒👴🥒👴🥒 \" and Mrs.Janice 👩‍🏫 told 👄 me to 2️⃣ go 👉' 
+            + 'outside 🌿 i 👁️ fucking hate 😠😠😠 that cunt 👩‍🏫 school 🏫 is for' 
+            + '4️⃣ dumb ppl 😖 just like what Rick 👴 said 👄 , im 👁️ too 2️⃣ smart'
+            + '🎓 for such imbicells. But 🍑 yeah I 👁️ love ♥️ Rick 👴 and Morty'
+            + '👶 and I\'m 👁️ actually smart 🎓 enough to 2️⃣ get it to 2️⃣. 💯💯💯' 
+          }
+        }
+        callSendAPI(messageData);
         break;
       default:
-        sendTextMessage(senderID, messageText);
+        sendTextMessage(senderID, messageTextFormatted);
     }
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
@@ -439,16 +491,25 @@ Once you've finished these steps, try typing “video” or “image”.
 
 function sendHiMessage(recipientId) {
   console.log(recipientId);
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: "hello"
+  request("https://graph.facebook.com/v2.6/" + recipientId + 
+  "?fields=first_name,last_name,profile_pic&access_token=" 
+  + PAGE_ACCESS_TOKEN, 
+  function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      var userInfo = JSON.parse(body);
+      console.log(userInfo);
+      var messageData = {
+        recipient: {
+          id: recipientId
+        },
+        message: {
+          text: "Hello " + userInfo.first_name + "."
+        }
+      }
+      callSendAPI(messageData);
     }
-  }
+  });
 
-  callSendAPI(messageData);
 }
 
 /*
@@ -872,6 +933,75 @@ function callSendAPI(messageData) {
       console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
     }
   });
+}
+
+function searchSong (song, senderID) {
+  var Spotify = require('node-spotify-api')
+
+  var spotify = new Spotify({
+    id: process.env.spotify_id,
+    secret: process.env.spotify_secret
+  })
+
+  spotify.search({ type: 'track', query: song }, function (err, data) {
+    if (err) {
+      return console.log('Error occurred: ' + err)
+    }
+    var messageData = {
+      recipient: {
+        id: senderID
+      },
+      message: {
+        text: 'Artist: ' + data.tracks.items[0].artists[0].name +
+              '\nTrack: ' + data.tracks.items[0].name +
+              '\nPreview: ' + data.tracks.items[0].preview_url
+      }
+    }
+    //Debug
+    console.log('Artist: ' + data.tracks.items[0].artists[0].name);
+    console.log('Track: ' + data.tracks.items[0].name);
+    console.log('Preview: ' + data.tracks.items[0].preview_url);
+
+    callSendAPI(messageData);
+  })
+}
+
+function displayTweets (screen_name, senderID) {
+  var Twitter = require('twitter');
+
+  var client = new Twitter({
+    consumer_key: process.env.twitter_consumer_key,
+    consumer_secret: process.env.twitter_consumer_secret,
+    access_token_key: process.env.twitter_access_token_key,
+    access_token_secret: process.env.twitter_access_token_secret
+  })
+
+  var params = {screen_name: screen_name}
+  client.get('statuses/user_timeline', params, function (error, tweets, response) {
+    // If no error, display most recent 20 tweets
+    if (!error) {
+      var message = "";
+      if (tweets.length >= 10) {
+        for (var i = 0; i < 10; i++) {
+          console.log(tweets[i].created_at + '\n' + tweets[i].text);
+          message += tweets[i].created_at + '\n' + tweets[i].text + '\n\n';
+        }
+      } else {
+        for (var i = 0; i < tweets.length; i++) {
+          console.log(tweets[i].created_at + ' ' + tweets[i].text);
+        }
+      }
+      var messageData = {
+        recipient: {
+          id: senderID
+        },
+        message: {
+          text: message
+        }
+      }
+      callSendAPI(messageData);
+    }
+  })
 }
 
 // Start server
