@@ -1,0 +1,17 @@
+{
+  "name": "clrk.bot",
+  "version": "1.0.0",
+  "description": "A simple facebook bot that displays tweets and spotify songs",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "clrk",
+    "bot",
+    "facebook",
+    "messenger"
+  ],
+  "author": "Clark P",
+  "license": "ISC"
+}
