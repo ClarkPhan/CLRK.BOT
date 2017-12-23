@@ -1041,6 +1041,18 @@ function searchMovie (movie, senderID) {
       var Rotten_Tomatoes_Rating = "";
 
       console.log(movieInfo);
+      if (movieInfo.Response === 'False') {
+        var messageData = {
+          recipient: {
+            id: senderID
+          },
+          message: {
+            text: 'Invalid Movie Name!'
+          }
+        }
+        callSendAPI(messageData);
+        return;
+      }
       console.log('Title: ' + movieInfo.Title)
       console.log('Release Year: ' + movieInfo.Year)
       if (movieInfo.Ratings[0] !== undefined) {
