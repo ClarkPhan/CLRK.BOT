@@ -254,7 +254,7 @@ function receivedMessage(event) {
     var messageTextFormatted = messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase();
     var commandArray = messageText.split(" ", 1);
     var song_or_movie = "";
-    var i = commandArray[0].length;
+    var i = commandArray[0].length + 1;
     while (messageText[i] !== undefined) {
       song_or_movie += messageText[i];
       i++;
@@ -978,6 +978,19 @@ function searchSong (song, senderID) {
 }
 
 function displayTweets (screen_name, senderID) {
+  console.log(screen_name.indexOf(' '));
+  if (screen_name.indexOf(' ') > 0) {
+    var messageData = {
+      recipient: {
+        id: senderID
+      },
+      message: {
+        text: 'Invalid Twitter Screen Name!'
+      }
+    }
+    callSendAPI(messageData);
+    return;
+  }
   var Twitter = require('twitter');
 
   var client = new Twitter({
