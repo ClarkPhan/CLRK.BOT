@@ -337,6 +337,9 @@ function receivedMessage(event) {
       case 'account linking':
         requiresServerURL(sendAccountLinking, [senderID]);
         break;
+      case 'hello bot':
+        sendTextMessage(senderID, 'Hello daddy.');
+        break;
       case 'call me by my other name':
         var messageData = {
           recipient: {
@@ -382,7 +385,7 @@ function receivedMessage(event) {
         callSendAPI(messageData);
         break;
       default:
-        sendTextMessage(senderID, messageTextFormatted);
+        sendTextMessage(senderID, "Sorry, I didn't recognize that command.");
     }
   } else if (messageAttachments) {
     if (messageAttachments[0].type === "location") {
@@ -970,6 +973,7 @@ function searchSong (song, senderID) {
     if (err) {
       return console.log('Error occurred: ' + err)
     }
+    console.log(data.tracks.items[0].external_urls.spotify);
     var messageData = {
       recipient: {
         id: senderID
@@ -977,7 +981,7 @@ function searchSong (song, senderID) {
       message: {
         text: 'Artist: ' + data.tracks.items[0].artists[0].name +
               '\nTrack: ' + data.tracks.items[0].name +
-              '\nPreview: ' + data.tracks.items[0].preview_url
+              '\nSpotify: ' + data.tracks.items[0].external_urls.spotify
       }
     }
     //Debug
