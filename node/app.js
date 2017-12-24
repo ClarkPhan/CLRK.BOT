@@ -255,14 +255,29 @@ function receivedMessage(event) {
   if (messageText) {
     var messageTextFormatted = messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase();
     var commandArray = messageText.split(" ", 1);
+    var commandArray2 = messageText.split(":", 1);
+
     var song_or_movie = "";
+    var city = "";
+
     var i = commandArray[0].length + 1;
+    var j = commandArray2[0].length + 1;
+
     while (messageText[i] !== undefined) {
       song_or_movie += messageText[i];
       i++;
     }
+
+    while (messageText[j] !== undefined) {
+      city += messageText[j];
+      j++;
+    }
     commandArray[1] = song_or_movie;
+    commandArray2[1] = city;
+
     console.log(commandArray);
+    console.log(commandArray2);
+
     switch (commandArray[0].replace(/[^\w\s]/gi, '').trim().toLowerCase()) {
       case 'spotify':
         searchSong (commandArray[1], senderID);
@@ -275,6 +290,13 @@ function receivedMessage(event) {
       case 'movie':
         searchMovie(commandArray[1], senderID);
         sendReadReceipt(senderID);
+        return;
+    }
+
+    
+    switch (commandArray2[0].replace(/[^\w\s]/gi, '').trim().toLowerCase()) {
+      case 'weather in':
+        weatherIn(commandArray2[1], senderID);
         return;
     }
     // If we receive a text message, check to see if it matches any special
@@ -1204,7 +1226,31 @@ function getTodaysWeatherData(lat, long, recipientID) {
       });
     }
   });
-} 
+}
+
+function weatherIn (city, recipientID) {
+  var weather = require('weather-js');
+  weather.find({search: city, degreeType: 'F'}, function(err, result) {
+    if(err) {
+      console.log(err);
+    }
+    var weatherData = result[0];
+    var weatherGif_URL = weatherData.current.imageUrl;
+    var messageData = {
+      recipient: {
+        id: recipientID
+      },
+      message: {
+        text: weatherData.location.name + '\n' +
+              'Current temperature: ' + weatherData.current.temperature + 'F' + '\n' +
+              'Current conditions: ' + weatherData.current.skytext + '\n\n' 
+      }
+    }
+    callSendAPI(messageData);
+    sendGifMessage(recipientID, weatherGif_URL);
+    console.log(JSON.stringify(result[0], null, 2));
+  });
+}
 
 // Start server
 // Webhooks must be available via SSL with a certificate signed by a valid
