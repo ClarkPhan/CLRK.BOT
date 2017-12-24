@@ -346,6 +346,9 @@ function receivedMessage(event) {
         }
         callSendAPI(messageData);
         break;
+        case 'weather':
+          sendLocationQuickReply(senderID);
+          break;
         case 'wtf':
         var messageData = {
           recipient: {
@@ -514,7 +517,7 @@ function sendHiMessage(recipientId) {
           id: recipientId
         },
         message: {
-          text: "Hello " + userInfo.first_name + " " + userInfo.last_name + "."
+          text: "Hello " + userInfo.first_name + "."
         }
       }
       callSendAPI(messageData);
@@ -1084,6 +1087,25 @@ function searchMovie (movie, senderID) {
       callSendAPI(messageData);
     }
   })
+}
+
+function sendLocationQuickReply(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: "Please share your location",
+      quick_replies: [
+        {
+          "content_type":"location",
+          "title":"Action",
+          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION"
+        }
+      ]
+    }
+  };
+  callSendAPI(messageData);
 }
 
 // Start server
