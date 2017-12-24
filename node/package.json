@@ -20,6 +20,7 @@
     "dotenv": "^4.0.0",
     "ejs": "^2.4.2",
     "express": "^4.13.4",
+    "geocoder": "^0.2.3",
     "messenger-bot": "^2.4.0",
     "node-spotify-api": "^1.0.7",
     "request": "^2.72.0",

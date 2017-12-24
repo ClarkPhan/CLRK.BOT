@@ -18,8 +18,10 @@ const
   https = require('https'),
   request = require('request');
   
+  
 // Read and set environment variables
 var dotenv = require("dotenv").config();
+
 var app = express();
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
@@ -383,6 +385,12 @@ function receivedMessage(event) {
         sendTextMessage(senderID, messageTextFormatted);
     }
   } else if (messageAttachments) {
+    if (messageAttachments[0].type === "location") {
+      var lat = messageAttachments[0].payload.coordinates.lat;
+      var long = messageAttachments[0].payload.coordinates.long;
+
+      getWeatherData(lat, long, senderID);
+    } 
     sendTextMessage(senderID, "Message with attachment received");
   }
 }
@@ -1106,6 +1114,21 @@ function sendLocationQuickReply(recipientId) {
     }
   };
   callSendAPI(messageData);
+}
+
+function getWeatherData(lat, long, recipientID) {
+  var geocoder = require('geocoder');
+
+  geocoder.reverseGeocode(lat, long, function (err, data) {
+    if (!err) {
+      for (var i = 0; i < data.results[0].address_components.length; i++) {
+        if (data.results[0].address_components[i].types[0] === "postal_code") {
+          var postal_code = data.results[0].address_components[i].long_name;
+        }
+      }
+      console.log(postal_code);
+    } 
+  });
 }
 
 // Start server
