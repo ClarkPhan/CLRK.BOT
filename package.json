@@ -13,5 +13,8 @@
     "messenger"
   ],
   "author": "Clark P",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "weather-js": "^2.0.0"
+  }
 }

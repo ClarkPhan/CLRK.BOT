@@ -348,7 +348,7 @@ function receivedMessage(event) {
         }
         callSendAPI(messageData);
         break;
-        case 'weather':
+        case 'current weather':
           sendLocationQuickReply(senderID);
           break;
         case 'wtf':
@@ -390,6 +390,7 @@ function receivedMessage(event) {
       var long = messageAttachments[0].payload.coordinates.long;
 
       getWeatherData(lat, long, senderID);
+      return;
     } 
     sendTextMessage(senderID, "Message with attachment received");
   }
@@ -560,7 +561,7 @@ function sendImageMessage(recipientId) {
  * Send a Gif using the Send API.
  *
  */
-function sendGifMessage(recipientId) {
+function sendGifMessage(recipientId, url) {
   var messageData = {
     recipient: {
       id: recipientId
@@ -569,7 +570,7 @@ function sendGifMessage(recipientId) {
       attachment: {
         type: "image",
         payload: {
-          url: SERVER_URL + "/assets/instagram_logo.gif"
+          url: url
         }
       }
     }
@@ -1118,6 +1119,7 @@ function sendLocationQuickReply(recipientId) {
 
 function getWeatherData(lat, long, recipientID) {
   var geocoder = require('geocoder');
+  var weather = require('weather-js');
 
   geocoder.reverseGeocode(lat, long, function (err, data) {
     if (!err) {
@@ -1126,10 +1128,79 @@ function getWeatherData(lat, long, recipientID) {
           var postal_code = data.results[0].address_components[i].long_name;
         }
       }
-      console.log(postal_code);
-    } 
+      // Options: 
+      // search:     location name or zipcode 
+      // degreeType: F or C 
+      weather.find({search: postal_code, degreeType: 'F'}, function(err, result) {
+        if(err) {
+          console.log(err);
+        }
+        var weatherData = result[0];
+        var weatherGif_URL = weatherData.current.imageUrl;
+        var messageData = {
+          recipient: {
+            id: recipientID
+          },
+          message: {
+            text: weatherData.location.name + '\n' +
+                  'Current temperature: ' + weatherData.current.temperature + 'F' + '\n' +
+                  'Current conditions: ' + weatherData.current.skytext + '\n\n' 
+          }
+        }
+        callSendAPI(messageData);
+        sendGifMessage(recipientID, weatherGif_URL);
+        console.log(JSON.stringify(result[0], null, 2));
+      });
+    }
   });
-}
+} 
+
+function getTodaysWeatherData(lat, long, recipientID) {
+  var geocoder = require('geocoder');
+  var weather = require('weather-js');
+
+  geocoder.reverseGeocode(lat, long, function (err, data) {
+    if (!err) {
+      for (var i = 0; i < data.results[0].address_components.length; i++) {
+        if (data.results[0].address_components[i].types[0] === "postal_code") {
+          var postal_code = data.results[0].address_components[i].long_name;
+        }
+      }
+      // Options: 
+      // search:     location name or zipcode 
+      // degreeType: F or C 
+      weather.find({search: postal_code, degreeType: 'F'}, function(err, result) {
+        if(err) {
+          console.log(err);
+        }
+        var weatherData = result[0];
+        
+        //Get forcast for today
+        for (var i = 0; i < weatherData.forecast.length; i++) {
+          if (weatherData.forecast[i].date === weatherData.current.date) {
+            var high = weatherData.forecast[i].high;
+            var low = weatherData.forecast[i].low;
+            var forcasted_conditions = weatherData.forecast[i].skytextday;
+          }
+        }
+        var messageData = {
+          recipient: {
+            id: recipientID
+          },
+          message: {
+            text: weatherData.location.name + '\n' +
+                  'Forcasted conditions: ' + forcasted_conditions + '\n' +
+                  'Low: ' + low + '\n' +
+                  'High: ' + high 
+                  
+          }
+        }
+        callSendAPI(messageData);
+        console.log(JSON.stringify(result[0], null, 2));
+      });
+    }
+  });
+} 
 
 // Start server
 // Webhooks must be available via SSL with a certificate signed by a valid
